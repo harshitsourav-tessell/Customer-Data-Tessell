@@ -1,0 +1,3525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AON Environment Replication Dashboard</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --text-dark: #333;
+            --text-light: #666;
+            --card-bg: #fff;
+            --bg-color: #f4f6f8;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px rgba(0,0,0,0.05);
+            --border-color: #eee;
+            --info-bg: #e3f2fd;
+            --info-text: #0d47a1;
+            --crit-bg: #ffebee;
+            --crit-text: #c62828;
+            --warn-bg: #fff3e0;
+            --warn-text: #ef6c00;
+            --success-bg: #e8f5e9;
+            --success-text: #1b5e20;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            color: var(--text-dark);
+        }
+
+        /* Header */
+        header {
+            background-color: #fff;
+            border-bottom: 1px solid #ddd;
+            padding: 0 2rem; /* Reduced padding to fit nav height */
+            height: 70px;    /* Fixed height for alignment */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        header h1 { 
+            margin: 0; 
+            font-size: 1.25rem; 
+            color: var(--text-dark); 
+            font-weight: 600;
+        }
+        
+        header .badge { 
+            background: var(--primary-color); 
+            color: white; 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+
+        /* Navigation Menu */
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            align-items: center;
+        }
+
+        .nav-item {
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-light);
+            font-weight: 500;
+            font-size: 0.95rem;
+            padding: 0 1.5rem;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            border-bottom: 3px solid transparent; /* Invisible border for layout stability */
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary-color);
+            background-color: #f8f9fa;
+            border-bottom-color: var(--primary-color);
+        }
+
+        /* Mobile Menu Button (Hidden on Desktop) */
+        .menu-toggle {
+            display: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-dark);
+        }
+
+        /* Responsive Navigation */
+        @media (max-width: 768px) {
+            header {
+                padding: 0 1rem;
+            }
+            
+            .nav-menu {
+                display: none; /* Hide by default on mobile */
+                position: absolute;
+                top: 70px;
+                left: 0;
+                width: 100%;
+                background: white;
+                flex-direction: column;
+                border-bottom: 1px solid #ddd;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            }
+
+            .nav-menu.active {
+                display: flex;
+            }
+
+            .nav-item {
+                width: 100%;
+                height: 50px;
+            }
+
+            .nav-link {
+                width: 100%;
+                padding: 0 1.5rem;
+                border-bottom: 1px solid #eee;
+                border-left: 4px solid transparent; /* Change to left border for mobile */
+            }
+
+            .nav-link:hover, .nav-link.active {
+                border-bottom-color: #eee;
+                border-left-color: var(--primary-color);
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+            
+            /* Hide badge on very small screens if needed */
+            .badge-container { display: none; } 
+        }
+        /* Grid Container */
+        .container {
+            max-width: 1600px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            display: grid;
+            /* Responsive Auto-fit */
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); 
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Wide Card for Alerts */
+        .card-wide { grid-column: 1 / -1; }
+
+        .card h3 {
+            margin-top: 0;
+            color: var(--text-dark);
+            font-size: 1.1rem;
+            border-bottom: 2px solid var(--bg-color);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .sub-header {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 0.5rem;
+            margin-top: 1rem;
+            letter-spacing: 0.5px;
+        }
+        .sub-header:first-of-type { margin-top: 0; }
+
+        /* Configuration Tables */
+        .config-table { width: 100%; border-collapse: collapse; }
+        .config-table tr { border-bottom: 1px solid #f9f9f9; }
+        .config-table tr:last-child { border-bottom: none; }
+        .config-table td { padding: 0.8rem 0.5rem; font-size: 0.95rem; vertical-align: middle; }
+        .label { font-weight: 500; color: var(--text-dark); width: 60%; }
+        .value-container { text-align: right; }
+        
+        /* Badges */
+        .badge-pill {
+            padding: 0.35rem 0.8rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: inline-block;
+            background-color: #e9ecef;
+            color: #495057;
+            margin-left: 4px;
+            margin-bottom: 4px;
+        }
+        .badge-blue { background-color: var(--info-bg); color: var(--info-text); }
+        .badge-crit { background-color: var(--crit-bg); color: var(--crit-text); border: 1px solid #ffcdd2; }
+        .badge-warn { background-color: var(--warn-bg); color: var(--warn-text); border: 1px solid #ffe0b2; }
+        .badge-success { background-color: var(--success-bg); color: var(--success-text); border: 1px solid #c8e6c9; }
+
+        /* Summary Grid (Feature Flags) */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .summary-item {
+            background: #f8f9fa;
+            padding: 0.75rem;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+        .summary-count { display: block; font-size: 1.25rem; font-weight: bold; color: var(--primary-color); }
+        .summary-label { font-size: 0.75rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.25rem; }
+
+        /* --- FIXED LIST ALIGNMENT STYLES --- */
+        .list-container { border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; flex-grow: 1; }
+        .scroll-area { height: 350px; overflow-y: auto; background: #fff; }
+        .column-dropdown { width: 100%; padding: 4px; font-size: 0.75rem; border: 1px solid #ddd; border-radius: 4px; background: white; }
+        /* Common Row Styles */
+        .list-header, .db-row, .feature-item {
+            display: grid; 
+            align-items: center;
+            padding: 0.6rem 1rem; 
+            border-bottom: 1px solid var(--border-color); 
+            font-size: 0.9rem;
+        }
+        .list-header { background: #f1f3f5; font-weight: 600; color: var(--text-dark); font-size: 0.85rem; }
+        .db-row:last-child { border-bottom: none; }
+
+        /* Specific Column Layouts - Ensuring Perfect Alignment */
+        /* 3 Columns: Engine | Version | Count */
+        .grid-3-col { grid-template-columns: 2fr 2fr 1fr; gap: 10px; }
+        
+        /* 2 Columns: Name | Count/Role */
+        .grid-2-col { grid-template-columns: 3fr 1fr; gap: 10px; }
+        
+        /* 2 Columns: Wide Name | Count */
+        .grid-2-col-wide { grid-template-columns: 4fr 1fr; gap: 10px; }
+
+        /* Text Utilities */
+        .text-right { text-align: right; }
+        .text-mono { font-family: 'Consolas', monospace; font-size: 0.8rem; color: #444; word-break: break-all; }
+        .text-faded { color: #888; font-size: 0.85rem; }
+        .font-bold { font-weight: 600; color: var(--primary-color); }
+
+        /* Category Tags */
+        .cat-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; white-space: nowrap; display: inline-block; }
+        .cat-gov { background: #e3f2fd; color: #0d47a1; }
+        .cat-db { background: #e8f5e9; color: #1b5e20; }
+        .cat-cost { background: #fff3e0; color: #e65100; }
+        .cat-supp { background: #fce4ec; color: #880e4f; }
+        .cat-infra { background: #f3e5f5; color: #4a148c; }
+
+        /* Alerts Table (Full Width) */
+        .alert-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .alert-table th { text-align: left; color: #999; font-size: 0.85rem; padding: 10px; border-bottom: 2px solid #eee; text-transform: uppercase; }
+        .alert-table td { padding: 12px 10px; border-bottom: 1px solid #eee; font-size: 0.95rem; }
+        .alert-count { font-weight: bold; font-size: 1.1rem; text-align: center; }
+        .alert-context { color: #666; font-size: 0.85rem; font-family: monospace; }
+        .row-crit { background-color: #fffafa; }
+
+        /* Scrollbar */
+        .scroll-area::-webkit-scrollbar { width: 6px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <h1>AON Environment Replication</h1>
+        <div class="badge-container">
+            <span class="badge">Source: Jan 2026 Export</span>
+        </div>
+    </div>
+    <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+    <ul class="nav-menu" id="navMenu">
+        <li class="nav-item"><a href="/Users/harshitsourav/Tessell/CSX Environment Replication.html" class="nav-link">CSX</a></li>
+        <li class="nav-item"><a href="/Users/harshitsourav/Tessell/Equinor Environment Replication.html" class="nav-link">Equinor</a></li>
+        <li class="nav-item"><a href="/Users/harshitsourav/Tessell/AON Environment Replication.html" class="nav-link">AON</a></li>
+        <li class="nav-item"><a href="/Users/harshitsourav/Tessell/Citizens Environment Replication.html" class="nav-link">Citizen</a></li>
+        <li class="nav-item"><a href="/Users/harshitsourav/Tessell/Citizens Bank Environment Replication.html" class="nav-link">Citizen Bank</a></li>
+    </ul>
+</header>
+
+<div class="container">
+
+    <div class="card">
+        <h3>Tenant Level Configuration</h3>
+        <table class="config-table">
+            <tr><td class="label">Private CP-DP Enabled</td><td class="value-container"><span class="badge-pill badge-success">Yes</span></td></tr>
+            <tr><td class="label">Deployment Option</td><td class="value-container"><span class="badge-pill">VPT @ Customer</span></td></tr>
+            <tr><td class="label">Shared Control Plane</td><td class="value-container"><span class="badge-pill">No</span></td></tr>
+            <tr><td class="label">Customer Type</td><td class="value-container"><span class="badge-pill">External</span></td></tr>
+            <tr><td class="label">Auth Type</td><td class="value-container"><span class="badge-pill">Password</span></td></tr>
+            <tr><td class="label">Enabled Clouds</td><td class="value-container"><span class="badge-pill badge-blue">Azure</span></td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Subscription Configuration</h3>
+        <table class="config-table">
+            <tr><td class="label">Total Active Subscriptions</td><td class="value-container"><span class="badge-pill">15</span></td></tr>
+            <tr><td class="label">Deployment Type</td><td class="value-container"><span class="badge-pill">BYOA</span></td></tr>
+            <tr><td class="label">Cloud</td><td class="value-container"><span class="badge-pill badge-blue">Azure</span></td></tr>
+            <tr><td class="label">Regions</td><td class="value-container"><span class="badge-pill">switzerlandNorth</span><span class="badge-pill">canadaCentral</span><span class="badge-pill">australiaEast</span><span class="badge-pill">eastUS2</span><span class="badge-pill">westEurope</span></td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>DB Services by Image & Version</h3>
+        <div class="list-container">
+            <div class="list-header grid-3-col">
+                <span>Engine</span><span>Version</span><span class="text-right">Count</span>
+            </div>
+            <div class="scroll-area">
+                <div class="db-row grid-3-col"><span>Oracle 19c SE2</span><span class="text-faded">19.27.0.0.250415</span><span class="text-right font-bold">81</span></div>
+                <div class="db-row grid-3-col"><span>Oracle 19c SE2</span><span class="text-faded">19.27.0.1.250415_DATAPUMP</span><span class="text-right font-bold">33</span></div>
+                <div class="db-row grid-3-col"><span>Oracle 19c SE2</span><span class="text-faded">19.26.0.0.250121</span><span class="text-right font-bold">23</span></div>
+                <div class="db-row grid-3-col"><span>Oracle 19c</span><span class="text-faded">19.27.0.1.250415_DATAPUMP</span><span class="text-right font-bold">20</span></div>
+                <div class="db-row grid-3-col"><span>Oracle 19c SE2</span><span class="text-faded">19.28.0.0.250715</span><span class="text-right font-bold">13</span></div>
+                <div class="db-row grid-3-col"><span>Oracle 19c</span><span class="text-faded">19.27.0.0.250415</span><span class="text-right font-bold">5</span></div>
+                <div class="db-row grid-3-col"><span>Oracle 19c</span><span class="text-faded">19.28.0.0.250715</span><span class="text-right font-bold">5</span></div>
+            </div>
+        </div>
+    </div>
+
+<div class="card">
+    <h3>Enabled Feature Flags</h3>
+    <div class="summary-grid">
+        <div class="summary-item"><span class="summary-count">19</span><span class="summary-label">Governance</span></div>
+        <div class="summary-item"><span class="summary-count">20</span><span class="summary-label">DB Services</span></div>
+        <div class="summary-item"><span class="summary-count">3</span><span class="summary-label">Cost & Billing</span></div>
+        <div class="summary-item"><span class="summary-count">3</span><span class="summary-label">Support</span></div>
+        <div class="summary-item"><span class="summary-count">1</span><span class="summary-label">Operations</span></div>
+        <div class="summary-item"><span class="summary-count">1</span><span class="summary-label">Observability</span></div>
+        <div class="summary-item"><span class="summary-count">1</span><span class="summary-label">Infrastructure</span></div>
+    </div>
+    <div class="list-container">
+        <div class="list-header grid-2-col"><span>Feature</span><span class="text-right">Category</span></div>
+        <div class="scroll-area">
+            <div class="feature-item grid-2-col"><span>Bring your own cloud accounts</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Bring your own networks</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Create VPC peering connections</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Create VPCs</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Create custom persona using a list of apps and privileges.</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Curation of computes</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Curation of software images</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Customize Network Creation</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Database Availability SLA Management</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Database Option Profile Curation</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Database Parameter Profile Curation</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Invite User</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage AD Integration</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage Database Licenses</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage Okta Integration</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage encryption keys</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Oracle Database Option Profile</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Oracle Database Parameter Profile</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Tessell-managed cloud accounts</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Get Billing Information</span><span class="text-right"><span class="cat-tag cat-cost">Cost</span></span></div>
+            <div class="feature-item grid-2-col"><span>Get Metering Insights</span><span class="text-right"><span class="cat-tag cat-cost">Cost</span></span></div>
+            <div class="feature-item grid-2-col"><span>Get Payments Information</span><span class="text-right"><span class="cat-tag cat-cost">Cost</span></span></div>
+            <div class="feature-item grid-2-col"><span>Compute level integrations for Multi Service</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Database logs</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Database monitoring</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Enable DR config</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Enable DR in primary region for HA</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Enforce refresh lineage</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Get Benchmark Information</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage Servers</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage Tessell Availability Machines</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage Tessell Availability Machines Data Access Policies (DAP)</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage Tessell Availability Machines RPO SLA</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage Tessell Scripts</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage access to Database Clones</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Monitoring Perf Insights Infra</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Multi-Az Provisioning for databases</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Multi-Disk</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Oracle Database Provisioning</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Oracle Multi-Service Provisioning</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Refresh service</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Server resize</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Soft Deletion of Snapshots</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Start a Database</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Stop a Database</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Timezone-Preference-Oracle</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>View Tessell Availability Machines Dataflix</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage Servers Consumption App</span><span class="text-right"><span class="cat-tag cat-gov">Infrastructure</span></span></div>
+            <div class="feature-item grid-2-col"><span>Observability App</span><span class="text-right"><span class="cat-tag cat-db">Observability</span></span></div>
+            <div class="feature-item grid-2-col"><span>Get Tessell Tasks</span><span class="text-right"><span class="cat-tag cat-db">Operations</span></span></div>
+            <div class="feature-item grid-2-col"><span>Jira ITSM</span><span class="text-right"><span class="cat-tag cat-supp">Support</span></span></div>
+            <div class="feature-item grid-2-col"><span>Report issues to Tessell support</span><span class="text-right"><span class="cat-tag cat-supp">Support</span></span></div>
+            <div class="feature-item grid-2-col"><span>Show all tickets</span><span class="text-right"><span class="cat-tag cat-supp">Support</span></span></div>
+        </div>
+    </div>
+</div>
+
+    <div class="card">
+        <h3>Topology & Service Config</h3>
+        <div class="sub-header">Topology Distribution</div>
+        <table class="config-table">
+            <tr><td class="label">SINGLE_INSTANCE</td><td class="value-container"><span class="badge-pill">179</span></td></tr>
+            <tr><td class="label">HIGH_AVAILABILITY</td><td class="value-container"><span class="badge-pill">1</span></td></tr>
+        </table>
+        <div class="sub-header">Multi-Service Compute</div>
+        <table class="config-table">
+            <tr><td class="label">Compute Sharing Enabled</td><td class="value-container"><span class="badge-pill badge-success">TRUE</span> (180)</td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Custom Parameter Profiles</h3>
+        <div class="list-container">
+            <div class="list-header grid-2-col-wide"><span>Profile ID</span><span class="text-right">Count</span></div>
+            <div class="scroll-area">
+                <div class="db-row grid-2-col-wide"><span class="text-mono">960f8382-f4dd-49fd-a451-e31d7d90f343</span><span class="text-right font-bold">45</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">8e889a46-4872-433b-9644-b1baaa8fadd5</span><span class="text-right font-bold">38</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">b76dd26b-6611-480c-bd25-47aa7dc6a31b</span><span class="text-right font-bold">32</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">ed769bf9-e1e4-40d6-8c2c-5786d38418d0</span><span class="text-right font-bold">14</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">70b5f458-c81f-4679-864e-633d8cc67191</span><span class="text-right font-bold">13</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">c201e2ef-6bd8-4afc-b6c2-2d84d02ec0ee</span><span class="text-right font-bold">9</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">1905856c-c22f-40f7-9322-190c73a6d2cd</span><span class="text-right font-bold">9</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">038dada4-b0e4-40c4-9d61-81433b1f266d</span><span class="text-right font-bold">7</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">fe51cda1-97be-48e7-ae0b-03c03285510b</span><span class="text-right font-bold">5</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">0276a330-e6a4-4df8-92e3-771cf93c5d22</span><span class="text-right font-bold">4</span></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3>Most Used Compute Shapes</h3>
+        <div class="list-container">
+            <div class="list-header grid-2-col"><span>Compute Type</span><span class="text-right">Count</span></div>
+            <div class="scroll-area">
+                <div class="db-row grid-2-col"><span>tesl_16_b-8</span><span class="text-right font-bold">129</span></div>
+                <div class="db-row grid-2-col"><span>tesl_Esv5_16-4</span><span class="text-right font-bold">10</span></div>
+                <div class="db-row grid-2-col"><span>tesl_Easv5_8-2</span><span class="text-right font-bold">9</span></div>
+                <div class="db-row grid-2-col"><span>tesl_Esv5_8-4</span><span class="text-right font-bold">8</span></div>
+                <div class="db-row grid-2-col"><span>tesl_Easv5_8-4</span><span class="text-right font-bold">6</span></div>
+                <div class="db-row grid-2-col"><span>tesl_Esv5_32-16</span><span class="text-right font-bold">6</span></div>
+                <div class="db-row grid-2-col"><span>tesl_Esv5_8-2</span><span class="text-right font-bold">6</span></div>
+                <div class="db-row grid-2-col"><span>tesl_4_b-2</span><span class="text-right font-bold">4</span></div>
+                <div class="db-row grid-2-col"><span>tesl_Esv5_4-2</span><span class="text-right font-bold">1</span></div>
+                <div class="db-row grid-2-col"><span>tesl_esv5_8-2</span><span class="text-right font-bold">1</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Options Profiles Used</h3>
+        <div class="list-container">
+            <div class="list-header grid-2-col-wide"><span>Options Profile ID</span><span class="text-right">Count</span></div>
+            <div class="scroll-area">
+                <div class="db-row grid-2-col-wide"><span class="text-mono">a44f5109-6010-4778-99ca-357fe786d45b</span><span class="text-right font-bold">180</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-faded">100% Default Options Profile</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Network & Connectivity</h3>
+        <div class="sub-header">Private Link Usage</div>
+        <table class="config-table">
+            <tr><td class="label">Private Link</td><td class="value-container"><span class="badge-pill">0%</span></td></tr>
+        </table>
+        <div class="sub-header">Service Region Counts</div>
+        <table class="config-table">
+            <tr><td class="label">eastUS2</td><td class="value-container"><span class="badge-pill badge-blue">109</span></td></tr>
+            <tr><td class="label">westEurope</td><td class="value-container"><span class="badge-pill badge-blue">44</span></td></tr>
+            <tr><td class="label">australiaEast</td><td class="value-container"><span class="badge-pill badge-blue">12</span></td></tr>
+            <tr><td class="label">canadaCentral</td><td class="value-container"><span class="badge-pill badge-blue">10</span></td></tr>
+            <tr><td class="label">switzerlandNorth</td><td class="value-container"><span class="badge-pill badge-blue">5</span></td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Storage Distribution</h3>
+        <div class="list-container">
+            <div class="list-header grid-2-col"><span>Provisioned Size (Approx)</span><span class="text-right">Count</span></div>
+            <div class="scroll-area">
+                <div class="db-row grid-2-col"><span>100 GB</span><span class="text-right font-bold">51</span></div>
+                <div class="db-row grid-2-col"><span>300 GB</span><span class="text-right font-bold">13</span></div>
+                <div class="db-row grid-2-col"><span>150 GB</span><span class="text-right font-bold">10</span></div>
+                <div class="db-row grid-2-col"><span>400 GB</span><span class="text-right font-bold">9</span></div>
+                <div class="db-row grid-2-col"><span>500 GB</span><span class="text-right font-bold">9</span></div>
+                <div class="db-row grid-2-col"><span>50 GB</span><span class="text-right font-bold">8</span></div>
+                <div class="db-row grid-2-col"><span>250 GB</span><span class="text-right font-bold">6</span></div>
+                <div class="db-row grid-2-col"><span>700 GB</span><span class="text-right font-bold">6</span></div>
+                <div class="db-row grid-2-col"><span>200 GB</span><span class="text-right font-bold">5</span></div>
+                <div class="db-row grid-2-col"><span>900 GB</span><span class="text-right font-bold">4</span></div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="card">
+        <h3>Security Configuration</h3>
+        <div class="sub-header">Encryption Enabled</div>
+        <table class="config-table">
+            <tr><td class="label">Oracle (Custom Key)</td><td class="value-container"><span class="badge-pill badge-success">180</span> </td></tr>
+        </table>
+        <div class="sub-header">SSL Enabled</div>
+        <table class="config-table">
+            <tr><td class="label">Oracle</td><td class="value-container"><span class="badge-pill badge-success">180</span> </td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Automation & Operations</h3>
+        <table class="config-table">
+            <tr>
+                <td class="label">Custom Pre-Scripts</td>
+                <td class="value-container"><span class="badge-pill">0%</span> </td>
+            </tr>
+            <tr>
+                <td class="label">Custom Post-Scripts</td>
+                <td class="value-container"><span class="badge-pill badge-success">95%</span> </td>
+            </tr>
+            <tr>
+                <td class="label">Native Incremental Backup</td>
+                <td class="value-container"><span class="badge-pill">TRUE (1,741)</span> </td>
+            </tr>
+            <tr>
+                <td class="label">Cloned Services</td>
+                <td class="value-container"><span class="badge-pill">5</span> </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="card card-wide">
+        <h3>Previous 7 Days Alerts</h3>
+        <table class="alert-table">
+            <thead>
+                <tr>
+                    <th style="width: 10%;">Count</th>
+                    <th style="width: 15%;">Severity</th>
+                    <th style="width: 30%;">Alert Name</th>
+                    <th>Context Example</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="row-crit">
+                    <td class="alert-count" style="color: #ef6c00;">34</td>
+                    <td><span class="badge-pill badge-warn">WARNING</span></td>
+                    <td style="font-weight: 500;">HostOutOfDiskSpace (< 15% left)</td>
+                    <td class="alert-context">/u02/app/oracle/oradata_AR0100D1</td>
+                </tr>
+                <tr class="row-crit">
+                    <td class="alert-count" style="color: #c62828;">24</td>
+                    <td><span class="badge-pill badge-crit">URGENT</span></td>
+                    <td style="font-weight: 500;">HostOutOfDiskSpace (< 10% left)</td>
+                    <td class="alert-context">/u02/app/oracle/oradata_AR0100D1</td>
+                </tr>
+                <tr class="row-crit">
+                    <td class="alert-count" style="color: #c62828;">21</td>
+                    <td><span class="badge-pill badge-crit">URGENT</span></td>
+                    <td style="font-weight: 500;">HostOutOfDiskSpace (< 5% left)</td>
+                    <td class="alert-context">/u02/app/oracle/oradata_AR0100D1</td>
+                </tr>
+                <tr class="row-warn">
+                    <td class="alert-count" style="color: #ef6c00;">16</td>
+                    <td><span class="badge-pill badge-warn">HIGH</span></td>
+                    <td style="font-weight: 500;">HostOutOfDiskINodes (< 20% left)</td>
+                    <td class="alert-context">/home</td>
+                </tr>
+                <tr class="row-crit">
+                    <td class="alert-count" style="color: #c62828;">15</td>
+                    <td><span class="badge-pill badge-crit">CRITICAL</span></td>
+                    <td style="font-weight: 500;">AM SLA Unhealthy</td>
+                    <td class="alert-context">am_name: AR0169QC0401</td>
+                </tr>
+                <tr class="row-crit">
+                    <td class="alert-count" style="color: #c62828;">4</td>
+                    <td><span class="badge-pill badge-crit">CRITICAL</span></td>
+                    <td style="font-weight: 500;">Native Backup for DB Service failed</td>
+                    <td class="alert-context">Service: AR6194PR01201</td>
+                </tr>
+                <tr class="row-crit">
+                    <td class="alert-count" style="color: #c62828;">3</td>
+                    <td><span class="badge-pill badge-crit">URGENT</span></td>
+                    <td style="font-weight: 500;">DB Primary/RR Node Down for ORACLE</td>
+                    <td class="alert-context">Service: AR4011DV00202</td>
+                </tr>
+                <tr class="row-crit">
+                    <td class="alert-count" style="color: #c62828;">3</td>
+                    <td><span class="badge-pill badge-crit">CRITICAL</span></td>
+                    <td style="font-weight: 500;">Database Service Status Down</td>
+                    <td class="alert-context">Service: AR4011DV00202</td>
+                </tr>
+                <tr class="row-crit">
+                    <td class="alert-count" style="color: #c62828;">3</td>
+                    <td><span class="badge-pill badge-crit">URGENT</span></td>
+                    <td style="font-weight: 500;">Oracle Tablespace Critically Full</td>
+                    <td class="alert-context">TABLESPACE SYSTEM</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="card card-wide">
+        <h3>User Access & Personas</h3>
+        <div class="list-container">
+            <div class="list-header grid-2-col">
+                <span>User Email / Name</span>
+                <span class="text-right">Role</span>
+            </div>
+            <div class="scroll-area">
+                <div class="db-row grid-2-col"><span class="text-faded">alok.garg@aon.com</span><span class="text-right"><span class="cat-tag cat-gov">Account Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">swaroop.atre@aon.com</span><span class="text-right"><span class="cat-tag cat-gov">Account Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">jagoda.wojcik@aon.pl</span><span class="text-right"><span class="cat-tag cat-infra">Administrator / Aon DBA</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">samathaseela.nanna@aon.com</span><span class="text-right"><span class="cat-tag cat-gov">Account Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">adm-a0732013@aon.com</span><span class="text-right"><span class="cat-tag cat-gov">Account Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">adm-a0719419@aon.com</span><span class="text-right"><span class="cat-tag cat-infra">Administrator</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">adm-a0756230@aon.com</span><span class="text-right"><span class="cat-tag cat-infra">Administrator</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">adm-ah50798@aon.com</span><span class="text-right"><span class="cat-tag cat-gov">Account Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">adm-sgoss1@aon.com</span><span class="text-right"><span class="cat-tag cat-gov">Account Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">adm-A0757501@aon.com</span><span class="text-right"><span class="cat-tag cat-gov">Account Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">adm-A0815651@aon.com</span><span class="text-right"><span class="cat-tag cat-db">Aon DBA</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">naveen.chanchal@aon.com</span><span class="text-right"><span class="cat-tag cat-db">Aon DBA</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">adm-A0808112@aon.com</span><span class="text-right"><span class="cat-tag cat-gov">Account Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">adm-a0795816@aon.com</span><span class="text-right"><span class="cat-tag cat-db">Aon DBA</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">SVC-USNH600984@aon.com</span><span class="text-right"><span class="cat-tag cat-cost">Data Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">SVC-INNH600528@aon.com</span><span class="text-right"><span class="cat-tag cat-cost">Data Owner / Admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">adm-A088270@aon.com</span><span class="text-right"><span class="cat-tag cat-db">Aon DBA</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">adm-A0882968@aon.com</span><span class="text-right"><span class="cat-tag cat-db">Aon DBA</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">adm-A0881521@aon.com</span><span class="text-right"><span class="cat-tag cat-db">Aon DBA</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">adm-a0890510@aon.com</span><span class="text-right"><span class="cat-tag cat-db">Aon DBA</span></span></div>
+            </div>
+        </div>
+    </div>
+    
+<div class="card card-wide">
+    <h3>Detailed Replication Data</h3>
+    <div class="list-container" style="overflow-x: auto;">
+        <table id="replication-table" class="alert-table" style="min-width: 2200px; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f1f3f5; text-align: left;">
+                    <th>SoftwareImage</th>
+                    <th>SoftwareImageVersion</th>
+                    <th>MultiDisk</th>
+                    <th>Topology</th>
+                    <th>ComputeSharingEnabled</th>
+                    <th>ParameterProfileId</th>
+                    <th>ComputeType</th>
+                    <th>OptionsProfileId</th>
+                    <th>Status</th>
+                    <th>Region</th>
+                    <th>Storage</th>
+                    <th>EnableEncryption</th>
+                    <th>EnableSSL</th>
+                    <th>ScriptId</th>
+                    <th>ScriptId.1</th>
+                    <th class="text-right">Count</th>
+                </tr>
+                <tr style="background: #fafafa;">
+    <th>
+        <select class="column-dropdown" data-col="0" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;">
+            <option value="">All</option>
+            <option value="Oracle 19c">Oracle 19c</option>
+            <option value="Oracle 19c SE2">Oracle 19c SE2</option>
+        </select>
+    </th>
+    <th>
+        <select class="column-dropdown" data-col="1" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;">
+            <option value="">All</option>
+            <option value="19.26.0.0.250121">19.26.0.0.250121</option>
+            <option value="19.27.0.0.250415">19.27.0.0.250415</option>
+            <option value="19.27.0.1.250415_DATAPUMP">19.27.0.1.250415_DATAPUMP</option>
+            <option value="19.28.0.0.250715">19.28.0.0.250715</option>
+        </select>
+    </th>
+    <th>
+        <select class="column-dropdown" data-col="2" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;">
+            <option value="">All</option>
+            <option value="True">True</option>
+            <option value="False">False</option>
+        </select>
+    </th>
+    <th>
+        <select class="column-dropdown" data-col="3" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;">
+            <option value="">All</option>
+            <option value="HIGH_AVAILABILITY">HIGH_AVAILABILITY</option>
+            <option value="SINGLE_INSTANCE">SINGLE_INSTANCE</option>
+        </select>
+    </th>
+    <th>
+        <select class="column-dropdown" data-col="4" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;">
+            <option value="">All</option>
+            <option value="TRUE">TRUE</option>
+        </select>
+    </th>
+    <th>
+        <select class="column-dropdown" data-col="5" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;">
+            <option value="">All</option>
+            <option value="025e0254-4c8e-4abd-b425-608b7ce972c9">025e0...</option>
+            <option value="0276a330-e6a4-4df8-92e3-771cf93c5d22">0276a...</option>
+            <option value="038dada4-b0e4-40c4-9d61-81433b1f266d">038da...</option>
+            <option value="1905856c-c22f-40f7-9322-190c73a6d2cd">19058...</option>
+            <option value="4f119094-0f5d-42d9-9bfa-ed4f192fa134">4f119...</option>
+            <option value="6ef6416c-0116-4a3b-b733-0b1c5a1b2b71">6ef64...</option>
+            <option value="70b5f458-c81f-4679-864e-633d8cc67191">70b5f...</option>
+            <option value="8e889a46-4872-433b-9644-b1baaa8fadd5">8e889...</option>
+            <option value="960f8382-f4dd-49fd-a451-e31d7d90f343">960f8...</option>
+            <option value="b76dd26b-6611-480c-bd25-47aa7dc6a31b">b76dd...</option>
+            <option value="c201e2ef-6bd8-4afc-b6c2-2d84d02ec0ee">c201e...</option>
+            <option value="ed769bf9-e1e4-40d6-8c2c-5786d38418d0">ed769...</option>
+            <option value="fe51cda1-97be-48e7-ae0b-03c03285510b">fe51c...</option>
+        </select>
+    </th>
+    <th>
+        <select class="column-dropdown" data-col="6" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;">
+            <option value="">All</option>
+            <option value="tesl_16_b-8">tesl_16_b-8</option>
+            <option value="tesl_4_b-2">tesl_4_b-2</option>
+            <option value="tesl_Easv5_8-2">tesl_Easv5_8-2</option>
+            <option value="tesl_Easv5_8-4">tesl_Easv5_8-4</option>
+            <option value="tesl_Esv5_16-4">tesl_Esv5_16-4</option>
+            <option value="tesl_Esv5_32-16">tesl_Esv5_32-16</option>
+            <option value="tesl_Esv5_4-2">tesl_Esv5_4-2</option>
+            <option value="tesl_Esv5_8-2">tesl_Esv5_8-2</option>
+            <option value="tesl_Esv5_8-4">tesl_Esv5_8-4</option>
+            <option value="tesl_esv5_8-2">tesl_esv5_8-2</option>
+        </select>
+    </th>
+    <th>
+        <select class="column-dropdown" data-col="7" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;">
+            <option value="">All</option>
+            <option value="a44f5109-6010-4778-99ca-357fe786d45b">a44f5...</option>
+        </select>
+    </th>
+    <th>
+        <select class="column-dropdown" data-col="8" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;">
+            <option value="">All</option>
+            <option value="successful">successful</option>
+        </select>
+    </th>
+    <th>
+        <select class="column-dropdown" data-col="9" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;">
+            <option value="">All</option>
+            <option value="australiaEast">australiaEast</option>
+            <option value="canadaCentral">canadaCentral</option>
+            <option value="eastUS2">eastUS2</option>
+            <option value="switzerlandNorth">switzerlandNorth</option>
+            <option value="westEurope">westEurope</option>
+        </select>
+    </th>
+    <th>
+        <select class="column-dropdown" data-col="10" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;">
+            <option value="">All</option>
+            <option value="53,68,70,91,200">50 GB</option>
+            <option value="1,07,37,41,82,400">100 GB</option>
+            <option value="1,61,06,12,73,600">150 GB</option>
+            <option value="2,14,74,83,64,800">200 GB</option>
+            <option value="2,68,43,54,56,000">250 GB</option>
+            <option value="3,22,12,25,47,200">300 GB</option>
+            <option value="4,29,49,67,29,600">400 GB</option>
+            <option value="5,36,87,09,12,000">500 GB</option>
+            <option value="7,51,61,92,76,800">700 GB</option>
+            <option value="9,66,36,76,41,600">900 GB</option>
+            <option value="1,07,37,41,82,400">1 TB</option>
+        </select>
+    </th>
+    <th>
+        <select class="column-dropdown" data-col="11" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;">
+            <option value="">All</option>
+            <option value="True">True</option>
+        </select>
+    </th>
+    <th>
+        <select class="column-dropdown" data-col="12" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;">
+            <option value="">All</option>
+            <option value="True">True</option>
+        </select>
+    </th>
+    <th>
+        <select class="column-dropdown" data-col="13" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;">
+            <option value="">All</option>
+        </select>
+    </th>
+    <th>
+        <select class="column-dropdown" data-col="14" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;">
+            <option value="">All</option>
+            <option value="2da0cde3-6358-40b2-b17e-f5d09f5a8d2b">2da0c...</option>
+            <option value="db5df791-b0dc-4871-a9e3-b1a7892344c4">db5df...</option>
+        </select>
+    </th>
+    <th>
+        <select class="column-dropdown" data-col="15" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;">
+            <option value="">All</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+        </select>
+    </th>
+</tr>
+                </thead>
+            <tbody class="scroll-area">
+
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.28.0.0.250715</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_Esv5_8-4</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>6</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>4</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>161061273600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>4</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>70b5f458-c81f-4679-864e-633d8cc67191</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>322122547200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>3</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>ed769bf9-e1e4-40d6-8c2c-5786d38418d0</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>3</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>3</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>53687091200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>3</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_Esv5_16-4</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>1073741824000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>3</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.28.0.0.250715</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_Easv5_8-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>canadaCentral</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>3</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>0276a330-e6a4-4df8-92e3-771cf93c5d22</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>322122547200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>2</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>70b5f458-c81f-4679-864e-633d8cc67191</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>2</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>c201e2ef-6bd8-4afc-b6c2-2d84d02ec0ee</td>
+                    <td>tesl_Easv5_8-4</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>2</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>751619276800</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>2</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>1905856c-c22f-40f7-9322-190c73a6d2cd</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>161061273600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>2</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_Easv5_8-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>2</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>161061273600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>2</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>429496729600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>2</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_Esv5_32-16</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>2</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>2</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>2</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>2</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>70b5f458-c81f-4679-864e-633d8cc67191</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>switzerlandNorth</td>
+                    <td>128849018880</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>70b5f458-c81f-4679-864e-633d8cc67191</td>
+                    <td>tesl_Esv5_8-4</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>switzerlandNorth</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>c201e2ef-6bd8-4afc-b6c2-2d84d02ec0ee</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>switzerlandNorth</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>ed769bf9-e1e4-40d6-8c2c-5786d38418d0</td>
+                    <td>tesl_Esv5_4-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>switzerlandNorth</td>
+                    <td>483183820800</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>ed769bf9-e1e4-40d6-8c2c-5786d38418d0</td>
+                    <td>tesl_Esv5_8-4</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>switzerlandNorth</td>
+                    <td>483183820800</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>HIGH_AVAILABILITY</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>0276a330-e6a4-4df8-92e3-771cf93c5d22</td>
+                    <td>tesl_4_b-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>161061273600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td></td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>025e0254-4c8e-4abd-b425-608b7ce972c9</td>
+                    <td>tesl_4_b-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>2147483648000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>0276a330-e6a4-4df8-92e3-771cf93c5d22</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>536870912000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>70b5f458-c81f-4679-864e-633d8cc67191</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>429496729600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>70b5f458-c81f-4679-864e-633d8cc67191</td>
+                    <td>tesl_4_b-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>268435456000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>70b5f458-c81f-4679-864e-633d8cc67191</td>
+                    <td>tesl_Easv5_8-4</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>1610612736000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>c201e2ef-6bd8-4afc-b6c2-2d84d02ec0ee</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>c201e2ef-6bd8-4afc-b6c2-2d84d02ec0ee</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>268435456000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>c201e2ef-6bd8-4afc-b6c2-2d84d02ec0ee</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>322122547200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>c201e2ef-6bd8-4afc-b6c2-2d84d02ec0ee</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>429496729600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>c201e2ef-6bd8-4afc-b6c2-2d84d02ec0ee</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>751619276800</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td></td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.28.0.0.250715</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>025e0254-4c8e-4abd-b425-608b7ce972c9</td>
+                    <td>tesl_Easv5_8-4</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>1610612736000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.28.0.0.250715</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>70b5f458-c81f-4679-864e-633d8cc67191</td>
+                    <td>tesl_Easv5_8-4</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.28.0.0.250715</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>70b5f458-c81f-4679-864e-633d8cc67191</td>
+                    <td>tesl_Esv5_8-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>1932735283200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.28.0.0.250715</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>70b5f458-c81f-4679-864e-633d8cc67191</td>
+                    <td>tesl_Esv5_8-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>1986422374400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c</td>
+                    <td>19.28.0.0.250715</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>c201e2ef-6bd8-4afc-b6c2-2d84d02ec0ee</td>
+                    <td>tesl_Easv5_8-4</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>1342177280000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>db5df791-b0dc-4871-a9e3-b1a7892344c4</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>038dada4-b0e4-40c4-9d61-81433b1f266d</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>australiaEast</td>
+                    <td>1181116006400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>038dada4-b0e4-40c4-9d61-81433b1f266d</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>966367641600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>038dada4-b0e4-40c4-9d61-81433b1f266d</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>1905856c-c22f-40f7-9322-190c73a6d2cd</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>4398046511104</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>1905856c-c22f-40f7-9322-190c73a6d2cd</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>5497558138880</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>australiaEast</td>
+                    <td>966367641600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>53687091200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>161061273600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>322122547200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>375809638400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>429496729600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>536870912000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>ed769bf9-e1e4-40d6-8c2c-5786d38418d0</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>53687091200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>ed769bf9-e1e4-40d6-8c2c-5786d38418d0</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>375809638400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>ed769bf9-e1e4-40d6-8c2c-5786d38418d0</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>536870912000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>ed769bf9-e1e4-40d6-8c2c-5786d38418d0</td>
+                    <td>tesl_Esv5_16-4</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>53687091200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>ed769bf9-e1e4-40d6-8c2c-5786d38418d0</td>
+                    <td>tesl_Esv5_16-4</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>64424509440</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.26.0.0.250121</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>ed769bf9-e1e4-40d6-8c2c-5786d38418d0</td>
+                    <td>tesl_Esv5_16-4</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>429496729600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>1905856c-c22f-40f7-9322-190c73a6d2cd</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>751619276800</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>1905856c-c22f-40f7-9322-190c73a6d2cd</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>1288490188800</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>1905856c-c22f-40f7-9322-190c73a6d2cd</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>1905856c-c22f-40f7-9322-190c73a6d2cd</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>3848290697216</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>1905856c-c22f-40f7-9322-190c73a6d2cd</td>
+                    <td>tesl_Easv5_8-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>73d0a5c1-3fc9-42a2-bf1f-ea747bb1a4bd</td>
+                    <td>tesl_Esv5_32-16</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>2362232012800</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>australiaEast</td>
+                    <td>322122547200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>australiaEast</td>
+                    <td>805306368000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>australiaEast</td>
+                    <td>1342177280000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>150323855360</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>322122547200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>521838526464</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>644245094400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>751619276800</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>966367641600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td></td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_Esv5_16-4</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>australiaEast</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>australiaEast</td>
+                    <td>322122547200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>53687091200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td></td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>322122547200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>483183820800</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>536870912000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>751619276800</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>912680550400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>966367641600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>1073741824000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>1342177280000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>2147483648000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>2576980377600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>268435456000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_Esv5_16-4</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>858993459200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>db5df791-b0dc-4871-a9e3-b1a7892344c4</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_Esv5_32-16</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>912680550400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>australiaEast</td>
+                    <td>214748364800</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>australiaEast</td>
+                    <td>268435456000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>canadaCentral</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>canadaCentral</td>
+                    <td>1030792151040</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>canadaCentral</td>
+                    <td>1099511627776</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>canadaCentral</td>
+                    <td>3221225472000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>75161927680</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>102005473280</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>106300440576</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>236223201280</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>322122547200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>429496729600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>1127428915200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>b76dd26b-6611-480c-bd25-47aa7dc6a31b</td>
+                    <td>tesl_Esv5_32-16</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>332859965440</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>e84ed651-b3ff-4be4-bbe7-966459416dd6</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>canadaCentral</td>
+                    <td>1099511627776</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>e84ed651-b3ff-4be4-bbe7-966459416dd6</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>canadaCentral</td>
+                    <td>4398046511104</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>e84ed651-b3ff-4be4-bbe7-966459416dd6</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>1932735283200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>ed769bf9-e1e4-40d6-8c2c-5786d38418d0</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>australiaEast</td>
+                    <td>268435456000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>ed769bf9-e1e4-40d6-8c2c-5786d38418d0</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>53687091200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>fe51cda1-97be-48e7-ae0b-03c03285510b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>1181116006400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>fe51cda1-97be-48e7-ae0b-03c03285510b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>1342177280000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>fe51cda1-97be-48e7-ae0b-03c03285510b</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>1610612736000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td></td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.0.250415</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>fe51cda1-97be-48e7-ae0b-03c03285510b</td>
+                    <td>tesl_Easv5_8-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>db5df791-b0dc-4871-a9e3-b1a7892344c4</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>1905856c-c22f-40f7-9322-190c73a6d2cd</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>australiaEast</td>
+                    <td>236223201280</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>1905856c-c22f-40f7-9322-190c73a6d2cd</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>429496729600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>1905856c-c22f-40f7-9322-190c73a6d2cd</td>
+                    <td>tesl_Esv5_32-16</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>536870912000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td></td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>australiaEast</td>
+                    <td>536870912000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td></td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>144955146240</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>268435456000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>536870912000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_4_b-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_Esv5_16-4</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_Esv5_16-4</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>536870912000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_Esv5_8-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>2684354560000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_esv5_8-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>214748364800</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>214748364800</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>429496729600</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>536870912000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>643171352576</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>644245094400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>805306368000</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>1395864371200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>214748364800</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>322122547200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>fe51cda1-97be-48e7-ae0b-03c03285510b</td>
+                    <td>tesl_Esv5_8-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td></td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>fe51cda1-97be-48e7-ae0b-03c03285510b</td>
+                    <td>tesl_Esv5_8-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.27.0.1.250415_DATAPUMP</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>fe51cda1-97be-48e7-ae0b-03c03285510b</td>
+                    <td>tesl_Esv5_8-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>5497558138880</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.28.0.0.250715</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>858993459200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>db5df791-b0dc-4871-a9e3-b1a7892344c4</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.28.0.0.250715</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>8e889a46-4872-433b-9644-b1baaa8fadd5</td>
+                    <td>tesl_Easv5_8-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>westEurope</td>
+                    <td>107374182400</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.28.0.0.250715</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_16_b-8</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>eastUS2</td>
+                    <td>858993459200</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>db5df791-b0dc-4871-a9e3-b1a7892344c4</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+                <tr>
+                    <td>Oracle 19c SE2</td>
+                    <td>19.28.0.0.250715</td>
+                    <td><span class='badge-pill badge-crit'>False</span></td>
+                    <td>SINGLE_INSTANCE</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td class='text-mono'>960f8382-f4dd-49fd-a451-e31d7d90f343</td>
+                    <td>tesl_Easv5_8-2</td>
+                    <td class='text-mono'>a44f5109-6010-4778-99ca-357fe786d45b</td>
+                    <td></td>
+                    <td>canadaCentral</td>
+                    <td>214748364800</td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td><span class='badge-pill badge-success'>True</span></td>
+                    <td></td>
+                    <td>2da0cde3-6358-40b2-b17e-f5d09f5a8d2b</td>
+                    <td class='font-bold text-right'>1</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+
+<script>
+// 1. Column Sorting Logic
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.getElementById('replication-table');
+    const headers = table.querySelectorAll('thead tr:first-child th');
+    const tbody = table.querySelector('tbody');
+    
+    // Store sort direction for each column (1 = Ascending, -1 = Descending)
+    let sortDirections = Array.from(headers).map(() => 1);
+
+    headers.forEach((header, index) => {
+        header.addEventListener('click', () => {
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const direction = sortDirections[index];
+
+            // Check data type based on the first non-empty cell in the column
+            const sampleCell = rows.find(r => r.cells[index].textContent.trim() !== '')?.cells[index].textContent.trim();
+            const isNumeric = sampleCell && !isNaN(parseFloat(sampleCell.replace(/,/g, ''))) && isFinite(sampleCell.replace(/,/g, ''));
+
+            // Sort the rows
+            rows.sort((rowA, rowB) => {
+                const cellA = rowA.cells[index].textContent.trim();
+                const cellB = rowB.cells[index].textContent.trim();
+
+                if (isNumeric) {
+                    // Handle numbers (stripping commas if present)
+                    const a = parseFloat(cellA.replace(/,/g, '') || 0);
+                    const b = parseFloat(cellB.replace(/,/g, '') || 0);
+                    return (a - b) * direction;
+                } else {
+                    // Handle strings (case-insensitive)
+                    return cellA.localeCompare(cellB, undefined, { numeric: true, sensitivity: 'base' }) * direction;
+                }
+            });
+
+            // Re-append sorted rows to the table body
+            rows.forEach(row => tbody.appendChild(row));
+
+            // Toggle sort direction for the next click
+            sortDirections[index] = -direction;
+        });
+    });
+});
+
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('column-dropdown')) {
+        const table = document.getElementById('replication-table');
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        const dropdowns = Array.from(document.querySelectorAll('.column-dropdown'));
+
+        for (let i = 0; i < rows.length; i++) {
+            let matches = true;
+            for (let d = 0; d < dropdowns.length; d++) {
+                const colIndex = dropdowns[d].getAttribute('data-col');
+                const filterValue = dropdowns[d].value;
+                const cellValue = rows[i].cells[colIndex].textContent.trim();
+                
+                if (filterValue !== "" && cellValue !== filterValue) {
+                    matches = false;
+                    break;
+                }
+            }
+            rows[i].style.display = matches ? "" : "none";
+        }
+    }
+});
+</script>
+    
+</div>
+
+</body>
+</html>

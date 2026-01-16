@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Citizens Environment Replication Dashboard</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --text-dark: #333;
+            --text-light: #666;
+            --card-bg: #fff;
+            --bg-color: #f4f6f8;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px rgba(0,0,0,0.05);
+            --border-color: #eee;
+            --info-bg: #e3f2fd;
+            --info-text: #0d47a1;
+            --crit-bg: #ffebee;
+            --crit-text: #c62828;
+            --warn-bg: #fff3e0;
+            --warn-text: #ef6c00;
+            --success-bg: #e8f5e9;
+            --success-text: #1b5e20;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            color: var(--text-dark);
+        }
+
+        /* Header */
+        header {
+            background-color: #fff;
+            border-bottom: 1px solid #ddd;
+            padding: 0 2rem; /* Reduced padding to fit nav height */
+            height: 70px;    /* Fixed height for alignment */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        header h1 { 
+            margin: 0; 
+            font-size: 1.25rem; 
+            color: var(--text-dark); 
+            font-weight: 600;
+        }
+        
+        header .badge { 
+            background: var(--primary-color); 
+            color: white; 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+
+        /* Navigation Menu */
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            align-items: center;
+        }
+
+        .nav-item {
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-light);
+            font-weight: 500;
+            font-size: 0.95rem;
+            padding: 0 1.5rem;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            border-bottom: 3px solid transparent; /* Invisible border for layout stability */
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary-color);
+            background-color: #f8f9fa;
+            border-bottom-color: var(--primary-color);
+        }
+
+        /* Mobile Menu Button (Hidden on Desktop) */
+        .menu-toggle {
+            display: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-dark);
+        }
+
+        /* Responsive Navigation */
+        @media (max-width: 768px) {
+            header {
+                padding: 0 1rem;
+            }
+            
+            .nav-menu {
+                display: none; /* Hide by default on mobile */
+                position: absolute;
+                top: 70px;
+                left: 0;
+                width: 100%;
+                background: white;
+                flex-direction: column;
+                border-bottom: 1px solid #ddd;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            }
+
+            .nav-menu.active {
+                display: flex;
+            }
+
+            .nav-item {
+                width: 100%;
+                height: 50px;
+            }
+
+            .nav-link {
+                width: 100%;
+                padding: 0 1.5rem;
+                border-bottom: 1px solid #eee;
+                border-left: 4px solid transparent; /* Change to left border for mobile */
+            }
+
+            .nav-link:hover, .nav-link.active {
+                border-bottom-color: #eee;
+                border-left-color: var(--primary-color);
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+            
+            /* Hide badge on very small screens if needed */
+            .badge-container { display: none; } 
+        }
+        /* Grid Container */
+        .container {
+            max-width: 1600px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            display: grid;
+            /* Responsive Auto-fit */
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); 
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Wide Card for Alerts */
+        .card-wide { grid-column: 1 / -1; }
+
+        .card h3 {
+            margin-top: 0;
+            color: var(--text-dark);
+            font-size: 1.1rem;
+            border-bottom: 2px solid var(--bg-color);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .sub-header {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 0.5rem;
+            margin-top: 1rem;
+            letter-spacing: 0.5px;
+        }
+        .sub-header:first-of-type { margin-top: 0; }
+
+        /* Configuration Tables */
+        .config-table { width: 100%; border-collapse: collapse; }
+        .config-table tr { border-bottom: 1px solid #f9f9f9; }
+        .config-table tr:last-child { border-bottom: none; }
+        .config-table td { padding: 0.8rem 0.5rem; font-size: 0.95rem; vertical-align: middle; }
+        .label { font-weight: 500; color: var(--text-dark); width: 60%; }
+        .value-container { text-align: right; }
+        
+        /* Badges */
+        .badge-pill {
+            padding: 0.35rem 0.8rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: inline-block;
+            background-color: #e9ecef;
+            color: #495057;
+            margin-left: 4px;
+            margin-bottom: 4px;
+        }
+        .badge-blue { background-color: var(--info-bg); color: var(--info-text); }
+        .badge-crit { background-color: var(--crit-bg); color: var(--crit-text); border: 1px solid #ffcdd2; }
+        .badge-warn { background-color: var(--warn-bg); color: var(--warn-text); border: 1px solid #ffe0b2; }
+        .badge-success { background-color: var(--success-bg); color: var(--success-text); border: 1px solid #c8e6c9; }
+
+        /* Summary Grid (Feature Flags) */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .summary-item {
+            background: #f8f9fa;
+            padding: 0.75rem;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+        .summary-count { display: block; font-size: 1.25rem; font-weight: bold; color: var(--primary-color); }
+        .summary-label { font-size: 0.75rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.25rem; }
+
+        /* --- FIXED LIST ALIGNMENT STYLES --- */
+        .list-container { border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; flex-grow: 1; }
+        .scroll-area { height: 350px; overflow-y: auto; background: #fff; }
+        .column-dropdown { width: 100%; padding: 4px; font-size: 0.75rem; border: 1px solid #ddd; border-radius: 4px; background: white; }
+        /* Common Row Styles */
+        .list-header, .db-row, .feature-item {
+            display: grid; 
+            align-items: center;
+            padding: 0.6rem 1rem; 
+            border-bottom: 1px solid var(--border-color); 
+            font-size: 0.9rem;
+        }
+        .list-header { background: #f1f3f5; font-weight: 600; color: var(--text-dark); font-size: 0.85rem; }
+        .db-row:last-child { border-bottom: none; }
+
+        /* Specific Column Layouts - Ensuring Perfect Alignment */
+        /* 3 Columns: Engine | Version | Count */
+        .grid-3-col { grid-template-columns: 2fr 2fr 1fr; gap: 10px; }
+        
+        /* 2 Columns: Name | Count/Role */
+        .grid-2-col { grid-template-columns: 3fr 1fr; gap: 10px; }
+        
+        /* 2 Columns: Wide Name | Count */
+        .grid-2-col-wide { grid-template-columns: 4fr 1fr; gap: 10px; }
+
+        /* Text Utilities */
+        .text-right { text-align: right; }
+        .text-mono { font-family: 'Consolas', monospace; font-size: 0.8rem; color: #444; word-break: break-all; }
+        .text-faded { color: #888; font-size: 0.85rem; }
+        .font-bold { font-weight: 600; color: var(--primary-color); }
+
+        /* Category Tags */
+        .cat-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; white-space: nowrap; display: inline-block; }
+        .cat-gov { background: #e3f2fd; color: #0d47a1; }
+        .cat-db { background: #e8f5e9; color: #1b5e20; }
+        .cat-cost { background: #fff3e0; color: #e65100; }
+        .cat-supp { background: #fce4ec; color: #880e4f; }
+        .cat-infra { background: #f3e5f5; color: #4a148c; }
+
+        /* Alerts Table (Full Width) */
+        .alert-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .alert-table th { text-align: left; color: #999; font-size: 0.85rem; padding: 10px; border-bottom: 2px solid #eee; text-transform: uppercase; }
+        .alert-table td { padding: 12px 10px; border-bottom: 1px solid #eee; font-size: 0.95rem; }
+        .alert-count { font-weight: bold; font-size: 1.1rem; text-align: center; }
+        .alert-context { color: #666; font-size: 0.85rem; font-family: monospace; }
+        .row-crit { background-color: #fffafa; }
+
+        /* Scrollbar */
+        .scroll-area::-webkit-scrollbar { width: 6px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <h1>Citizen Environment Replication</h1>
+        <div class="badge-container">
+            <span class="badge">Source: Jan 2026 Export</span>
+        </div>
+    </div>
+    <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+    <ul class="nav-menu" id="navMenu">
+        <li class="nav-item"><a href="/Users/harshitsourav/Tessell/CSX Environment Replication.html" class="nav-link">CSX</a></li>
+        <li class="nav-item"><a href="/Users/harshitsourav/Tessell/Equinor Environment Replication.html" class="nav-link">Equinor</a></li>
+        <li class="nav-item"><a href="/Users/harshitsourav/Tessell/AON Environment Replication.html" class="nav-link">AON</a></li>
+        <li class="nav-item"><a href="/Users/harshitsourav/Tessell/Citizens Environment Replication.html" class="nav-link">Citizen</a></li>
+        <li class="nav-item"><a href="/Users/harshitsourav/Tessell/Citizens Bank Environment Replication.html" class="nav-link">Citizen Bank</a></li>
+    </ul>
+</header>
+
+<div class="container">
+
+    <div class="card">
+        <h3>Tenant Level Configuration</h3>
+        <table class="config-table">
+            <tr><td class="label">Private CP-DP Enabled</td><td class="value-container"><span class="badge-pill">No</span></td></tr>
+            <tr><td class="label">Deployment Option</td><td class="value-container"><span class="badge-pill">VPT</span></td></tr>
+            <tr><td class="label">Shared Control Plane</td><td class="value-container"><span class="badge-pill">Yes</span></td></tr>
+            <tr><td class="label">Customer Type</td><td class="value-container"><span class="badge-pill">External</span></td></tr>
+            <tr><td class="label">Auth Type</td><td class="value-container"><span class="badge-pill">Password</span></td></tr>
+            <tr><td class="label">Enabled Clouds</td><td class="value-container"><span class="badge-pill badge-blue">AWS</span></td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Subscription Configuration</h3>
+        <table class="config-table">
+            <tr><td class="label">Total Active Subscriptions</td><td class="value-container"><span class="badge-pill">19</span></td></tr>
+            <tr><td class="label">Deployment Type</td><td class="value-container"><span class="badge-pill">SHARED</span></td></tr>
+            <tr><td class="label">Cloud</td><td class="value-container"><span class="badge-pill badge-blue">AWS</span></td></tr>
+            <tr><td class="label">Regions</td><td class="value-container"><span class="badge-pill">us-east-1</span><span class="badge-pill">us-east-2</span><span class="badge-pill">us-west-2</span></td></tr>
+            <tr><td class="label">Resource Regions</td><td class="value-container"><span class="badge-pill">us-east-1</span><span class="badge-pill">ap-south-1</span></td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>DB Services by Image & Version</h3>
+        <div class="list-container">
+            <div class="list-header grid-3-col">
+                <span>Engine</span><span>Version</span><span class="text-right">Count</span>
+            </div>
+            <div class="scroll-area">
+                <div class="db-row grid-3-col"><span>PostgreSQL 15</span><span class="text-faded">15.4</span><span class="text-right font-bold">43</span></div>
+                <div class="db-row grid-3-col"><span>PostgreSQL 14</span><span class="text-faded">14.9</span><span class="text-right font-bold">17</span></div>
+                <div class="db-row grid-3-col"><span>MySQL 8.0</span><span class="text-faded">8.0.36</span><span class="text-right font-bold">16</span></div>
+                <div class="db-row grid-3-col"><span>PostgreSQL 16</span><span class="text-faded">16.1</span><span class="text-right font-bold">11</span></div>
+                <div class="db-row grid-3-col"><span>PostgreSQL 16</span><span class="text-faded">16.4</span><span class="text-right font-bold">10</span></div>
+                <div class="db-row grid-3-col"><span>MySQL 8.0</span><span class="text-faded">8.0.40</span><span class="text-right font-bold">6</span></div>
+                <div class="db-row grid-3-col"><span>PostgreSQL 16</span><span class="text-faded">16.8</span><span class="text-right font-bold">6</span></div>
+                <div class="db-row grid-3-col"><span>PostgreSQL 13</span><span class="text-faded">13.9</span><span class="text-right font-bold">4</span></div>
+                <div class="db-row grid-3-col"><span>PostgreSQL 14</span><span class="text-faded">14.8</span><span class="text-right font-bold">3</span></div>
+                <div class="db-row grid-3-col"><span>PostgreSQL 15</span><span class="text-faded">15.8</span><span class="text-right font-bold">3</span></div>
+                <div class="db-row grid-3-col"><span>MySQL 8.0</span><span class="text-faded">8.0.35</span><span class="text-right font-bold">1</span></div>
+                <div class="db-row grid-3-col"><span>PostgreSQL 13</span><span class="text-faded">13.13</span><span class="text-right font-bold">1</span></div>
+                <div class="db-row grid-3-col"><span>PostgreSQL 14</span><span class="text-faded">14.6</span><span class="text-right font-bold">1</span></div>
+                <div class="db-row grid-3-col"><span>PostgreSQL 17</span><span class="text-faded">17.1 (RHEL)</span><span class="text-right font-bold">1</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+    <h3>Enabled Feature Flags</h3>
+    <div class="summary-grid">
+        <div class="summary-item"><span class="summary-count">28</span><span class="summary-label">Governance</span></div>
+        <div class="summary-item"><span class="summary-count">33</span><span class="summary-label">DB Services</span></div>
+        <div class="summary-item"><span class="summary-count">3</span><span class="summary-label">Cost & Billing</span></div>
+        <div class="summary-item"><span class="summary-count">3</span><span class="summary-label">Support</span></div>
+        <div class="summary-item"><span class="summary-count">1</span><span class="summary-label">Operations</span></div>
+        <div class="summary-item"><span class="summary-count">1</span><span class="summary-label">Observability</span></div>
+        <div class="summary-item"><span class="summary-count">1</span><span class="summary-label">Infrastructure</span></div>
+    </div>
+    <div class="list-container">
+        <div class="list-header grid-2-col"><span>Feature</span><span class="text-right">Category</span></div>
+        <div class="scroll-area">
+            <div class="feature-item grid-2-col"><span>Apache Kafka Service Parameter Profile</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Bring your own cloud accounts</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Bring your own networks</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Create VPC peering connections</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Create VPCs</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Create custom persona using a list of apps and privileges.</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Curation of computes</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Curation of software images</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Customize Network Creation</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Database Availability SLA Management</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Database Option Profile Curation</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Database Parameter Profile Curation</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Invite User</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage AD Integration</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage Database Licenses</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage Okta Integration</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage encryption keys</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Multi-Tenant-Be-User</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>MySql Database Option Profile</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>MySql Database Parameter Profile</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>OOB personas</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Oracle Database Option Profile</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Oracle Database Parameter Profile</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Postgres Database Option Profile</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Postgres Database Parameter Profile</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>RHEL Software Images</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Tessell Integrations</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Tessell-managed cloud accounts</span><span class="text-right"><span class="cat-tag cat-gov">Governance</span></span></div>
+            <div class="feature-item grid-2-col"><span>Get Billing Information</span><span class="text-right"><span class="cat-tag cat-cost">Cost</span></span></div>
+            <div class="feature-item grid-2-col"><span>Get Metering Insights</span><span class="text-right"><span class="cat-tag cat-cost">Cost</span></span></div>
+            <div class="feature-item grid-2-col"><span>Get Payments Information</span><span class="text-right"><span class="cat-tag cat-cost">Cost</span></span></div>
+            <div class="feature-item grid-2-col"><span>Apache Kafka Service Provisioning</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Compute level integrations for Multi Service</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Database logs</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Database monitoring</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Enable DR config</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Enable DR in primary region for HA</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Enforce refresh lineage</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Get Benchmark Information</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>MSSQL Database Provisioning</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>MSSQL with High Performance Compute</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage Servers</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage Tessell Availability Machines</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage Tessell Availability Machines Data Access Policies (DAP)</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage Tessell Availability Machines RPO SLA</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage Tessell Scripts</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage access to Database Clones</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Monitoring Perf Insights Infra</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Multi-Az Provisioning for databases</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Multi-Disk</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>MySQL Database Provisioning</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Oracle Database Provisioning</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Oracle Multi-Service Provisioning</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>PITR support in DAPs</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Postgres Database Provisioning</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Refresh service</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Server resize</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Soft Deletion of Snapshots</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Start a Database</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Stop a Database</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Timezone-Preference-MSSQL</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Timezone-Preference-Oracle</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Timezone-Preference-Postgres</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>View Tessell Availability Machines Dataflix</span><span class="text-right"><span class="cat-tag cat-db">DB Services</span></span></div>
+            <div class="feature-item grid-2-col"><span>Manage Servers Consumption App</span><span class="text-right"><span class="cat-tag cat-gov">Infrastructure</span></span></div>
+            <div class="feature-item grid-2-col"><span>Observability App</span><span class="text-right"><span class="cat-tag cat-db">Observability</span></span></div>
+            <div class="feature-item grid-2-col"><span>Get Tessell Tasks</span><span class="text-right"><span class="cat-tag cat-db">Operations</span></span></div>
+            <div class="feature-item grid-2-col"><span>Jira ITSM</span><span class="text-right"><span class="cat-tag cat-supp">Support</span></span></div>
+            <div class="feature-item grid-2-col"><span>Report issues to Tessell support</span><span class="text-right"><span class="cat-tag cat-supp">Support</span></span></div>
+            <div class="feature-item grid-2-col"><span>Show all tickets</span><span class="text-right"><span class="cat-tag cat-supp">Support</span></span></div>
+        </div>
+    </div>
+</div>
+
+    <div class="card">
+        <h3>Topology & Service Config</h3>
+        <div class="sub-header">Topology Distribution</div>
+        <table class="config-table">
+            <tr><td class="label">SINGLE_INSTANCE</td><td class="value-container"><span class="badge-pill">80</span></td></tr>
+            <tr><td class="label">HIGH_AVAILABILITY</td><td class="value-container"><span class="badge-pill">43</span></td></tr>
+        </table>
+        <div class="sub-header">Multi-Service Compute</div>
+        <table class="config-table">
+            <tr><td class="label">Compute Sharing Enabled</td><td class="value-container"><span class="badge-pill">FALSE</span> (123)</td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Custom Parameter Profiles</h3>
+        <div class="list-container">
+            <div class="list-header grid-2-col-wide"><span>Profile ID</span><span class="text-right">Count</span></div>
+            <div class="scroll-area">
+                <div class="db-row grid-2-col-wide"><span class="text-mono">d7036f23-dde5-4747-863a</span><span class="text-right font-bold">21</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">892e7c15-c540-4da5-b01d</span><span class="text-right font-bold">12</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">8b44b499-f7f7-49f9-bb1b</span><span class="text-right font-bold">6</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">a941bbdd-55eb-4f7a-8efd</span><span class="text-right font-bold">6</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">26aa431f-dbb7-4f8e-8dfb</span><span class="text-right font-bold">5</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">a20ae9f1-aa7a-4475-a632</span><span class="text-right font-bold">5</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">cf3168a5-0fe2-48aa-b104</span><span class="text-right font-bold">5</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">d18b5ae4-2d01-4a5d-8d16</span><span class="text-right font-bold">5</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">fbca6b00-c427-41d9-ae6c</span><span class="text-right font-bold">5</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">2cbabff0-5ede-4cb5-8d63</span><span class="text-right font-bold">4</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">229cd9e2-436b-4672-af89</span><span class="text-right font-bold">3</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">5b587294-3272-4769-afdb</span><span class="text-right font-bold">3</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">b51921b9-337d-414e-93c7</span><span class="text-right font-bold">3</span></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3>Most Used Compute Shapes</h3>
+        <div class="list-container">
+            <div class="list-header grid-2-col"><span>Compute Type</span><span class="text-right">Count</span></div>
+            <div class="scroll-area">
+                <div class="db-row grid-2-col"><span>tesl_2_a</span><span class="text-right font-bold">45</span></div>
+                <div class="db-row grid-2-col"><span>tesl_2_b</span><span class="text-right font-bold">19</span></div>
+                <div class="db-row grid-2-col"><span>tesl_8_b</span><span class="text-right font-bold">15</span></div>
+                <div class="db-row grid-2-col"><span>tesl_2_c</span><span class="text-right font-bold">13</span></div>
+                <div class="db-row grid-2-col"><span>tesl_4_a</span><span class="text-right font-bold">5</span></div>
+                <div class="db-row grid-2-col"><span>tesl_4_b</span><span class="text-right font-bold">5</span></div>
+                <div class="db-row grid-2-col"><span>tesl_8_a</span><span class="text-right font-bold">5</span></div>
+                <div class="db-row grid-2-col"><span>tesl_m5a_4</span><span class="text-right font-bold">3</span></div>
+                <div class="db-row grid-2-col"><span>tesl_16_a</span><span class="text-right font-bold">2</span></div>
+                <div class="db-row grid-2-col"><span>tesl_32_a</span><span class="text-right font-bold">2</span></div>
+                <div class="db-row grid-2-col"><span>tesl_c5a_4</span><span class="text-right font-bold">2</span></div>
+                <div class="db-row grid-2-col"><span>tesl_m5a_8</span><span class="text-right font-bold">2</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Options Profiles Used</h3>
+        <div class="list-container">
+            <div class="list-header grid-2-col-wide"><span>Options Profile ID</span><span class="text-right">Count</span></div>
+            <div class="scroll-area">
+                <div class="db-row grid-2-col-wide"><span class="text-mono">1162ea7b-69fe-443a-93d1</span><span class="text-right font-bold">44</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">6eb89639-4587-427c-bbed</span><span class="text-right font-bold">23</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono text-faded">(No Profile Assigned)</span><span class="text-right font-bold">22</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">22819a55-d58c-4de0-9881</span><span class="text-right font-bold">21</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">55b74932-97f2-4723-a2b9</span><span class="text-right font-bold">5</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">1a86208e-1e7d-4e26-ae58</span><span class="text-right font-bold">4</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">00d0638c-2c24-460a-b8d2</span><span class="text-right font-bold">2</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">40940d63-d2d7-421e-96b6</span><span class="text-right font-bold">1</span></div>
+                <div class="db-row grid-2-col-wide"><span class="text-mono">516e030d-4110-4aa2-9d0d</span><span class="text-right font-bold">1</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Network & Connectivity</h3>
+        <div class="sub-header">Private Link Usage</div>
+        <table class="config-table">
+            <tr><td class="label">Others</td><td class="value-container"><span class="badge-pill">111</span></td></tr>
+            <tr><td class="label">Successful Connections</td><td class="value-container"><span class="badge-pill badge-success">12</span></td></tr>
+        </table>
+        <div class="sub-header">Service Region Counts</div>
+        <table class="config-table">
+            <tr><td class="label">us-east-1</td><td class="value-container"><span class="badge-pill badge-blue">118</span></td></tr>
+            <tr><td class="label">us-east-2</td><td class="value-container"><span class="badge-pill badge-blue">5</span></td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Storage Distribution</h3>
+        <div class="list-container">
+            <div class="list-header grid-2-col"><span>Provisioned Size</span><span class="text-right">Count</span></div>
+            <div class="scroll-area">
+                <div class="db-row grid-2-col"><span>~100 GB</span><span class="text-right font-bold">50</span></div>
+                <div class="db-row grid-2-col"><span>~150 GB</span><span class="text-right font-bold">18</span></div>
+                <div class="db-row grid-2-col"><span>~750 GB</span><span class="text-right font-bold">8</span></div>
+                <div class="db-row grid-2-col"><span>~70 GB</span><span class="text-right font-bold">7</span></div>
+                <div class="db-row grid-2-col"><span>~50 GB</span><span class="text-right font-bold">5</span></div>
+                <div class="db-row grid-2-col"><span>~500 GB</span><span class="text-right font-bold">5</span></div>
+                <div class="db-row grid-2-col"><span>~520 GB</span><span class="text-right font-bold">4</span></div>
+                <div class="db-row grid-2-col"><span>~300 GB</span><span class="text-right font-bold">2</span></div>
+                <div class="db-row grid-2-col"><span>~250 GB</span><span class="text-right font-bold">2</span></div>
+                <div class="db-row grid-2-col"><span>~2.8 TB</span><span class="text-right font-bold">2</span></div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="card">
+        <h3>Security Configuration</h3>
+        <div class="sub-header">Encryption Enabled</div>
+        <table class="config-table">
+            <tr><td class="label">PostgreSQL</td><td class="value-container"><span class="badge-pill badge-success">100</span> </td></tr>
+            <tr><td class="label">MySQL</td><td class="value-container"><span class="badge-pill badge-success">23</span> </td></tr>
+        </table>
+        <div class="sub-header">SSL Enabled</div>
+        <table class="config-table">
+            <tr><td class="label">PostgreSQL</td><td class="value-container"><span class="badge-pill badge-success">93</span> </td></tr>
+            <tr><td class="label">MySQL</td><td class="value-container"><span class="badge-pill badge-success">22</span> </td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Automation & Operations</h3>
+        <table class="config-table">
+            <tr>
+                <td class="label">Custom Pre-Scripts</td>
+                <td class="value-container"><span class="badge-pill">0/123</span> </td>
+            </tr>
+            <tr>
+                <td class="label">Custom Post-Scripts</td>
+                <td class="value-container"><span class="badge-pill">0/123</span> </td>
+            </tr>
+            <tr>
+                <td class="label">Native Incremental Backup</td>
+                <td class="value-container"><span class="badge-pill">FALSE</span> </td>
+            </tr>
+            <tr>
+                <td class="label">Cloned Services</td>
+                <td class="value-container"><span class="badge-pill">8</span> </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="card card-wide">
+        <h3>Previous 7 Days Alerts & Operational Intelligence</h3>
+        <table class="alert-table">
+            <thead>
+                <tr>
+                    <th style="width: 10%;">Count</th>
+                    <th style="width: 15%;">Severity</th>
+                    <th style="width: 25%;">Alert Name</th>
+                    <th>Latest Intelligence / Context</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="row-crit">
+                    <td class="alert-count" style="color: #c62828;">49</td>
+                    <td><span class="badge-pill badge-crit">CRITICAL</span></td>
+                    <td style="font-weight: 500;">DB Node Down for PG</td>
+                    <td class="alert-context">Target: tsl-edo-fql-us-east-1-qa-standalone-postgres</td>
+                </tr>
+                <tr class="row-warn">
+                    <td class="alert-count" style="color: #ef6c00;">12</td>
+                    <td><span class="badge-pill badge-warn">WARNING</span></td>
+                    <td style="font-weight: 500;">Host Out Of Memory</td>
+                    <td class="alert-context">Resource: citizens-zhjtraw-Server-VPw-J8302q_0</td>
+                </tr>
+                <tr class="row-crit">
+                    <td class="alert-count" style="color: #c62828;">7</td>
+                    <td><span class="badge-pill badge-crit">CRITICAL</span></td>
+                    <td style="font-weight: 500;">Library Upgrade Failed</td>
+                    <td class="alert-context">Library: dbExporter | Job: library_upgrade_status</td>
+                </tr>
+                <tr class="row-crit">
+                    <td class="alert-count" style="color: #c62828;">5</td>
+                    <td><span class="badge-pill badge-crit">CRITICAL</span></td>
+                    <td style="font-weight: 500;">Provisioning Failed</td>
+                    <td class="alert-context">Action: PROVISION_TESSELL_SERVICE</td>
+                </tr>
+                <tr class="row-crit">
+                    <td class="alert-count" style="color: #c62828;">4</td>
+                    <td><span class="badge-pill badge-crit">CRITICAL</span></td>
+                    <td style="font-weight: 500;">AM SLA Unhealthy</td>
+                    <td class="alert-context">AM Name: tsl-edo-atc-us-east-1-qa-standalone-postgres</td>
+                </tr>
+                <tr class="row-crit">
+                    <td class="alert-count" style="color: #c62828;">1</td>
+                    <td><span class="badge-pill badge-crit">CRITICAL</span></td>
+                    <td style="font-weight: 500;">Disk Space &lt; 10%</td>
+                    <td class="alert-context">Mount: /pgsql/archive</td>
+                </tr>
+                <tr class="row-crit">
+                    <td class="alert-count" style="color: #c62828;">1</td>
+                    <td><span class="badge-pill badge-crit">CRITICAL</span></td>
+                    <td style="font-weight: 500;">Heal of DB Service Failed</td>
+                    <td class="alert-context">Service: tsl-con-zz5-us-east-1-prod-standalone-mysql</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="card card-wide">
+        <h3>User Access & Personas</h3>
+        <div class="list-container">
+            <div class="list-header grid-2-col">
+                <span>User Email / Name</span>
+                <span class="text-right">Role</span>
+            </div>
+            <div class="scroll-area">
+                <div class="db-row grid-2-col"><span class="text-faded">build.citizens@tessell.com</span><span class="text-right"><span class="cat-tag cat-gov">Account Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Vikas.Agarwal</span><span class="text-right"><span class="cat-tag cat-gov">Account Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Mahendra.Subbaiah</span><span class="text-right"><span class="cat-tag cat-gov">Account Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Mohit.Narang</span><span class="text-right"><span class="cat-tag cat-gov">Account Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">support+citizens@tessell.com</span><span class="text-right"><span class="cat-tag cat-gov">Account Owner</span></span></div>
+
+                <div class="db-row grid-2-col"><span class="text-faded">ops-admin@tessell.com</span><span class="text-right"><span class="cat-tag cat-infra">Ops Admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Enterprise Database Observability</span><span class="text-right"><span class="cat-tag cat-infra">Administrator</span></span></div>
+
+                <div class="db-row grid-2-col"><span class="text-faded">ApptioTBMOffice</span><span class="text-right"><span class="cat-tag cat-cost">cfg-fin-report</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Matthew.J.Wilder</span><span class="text-right"><span class="cat-tag cat-cost">cfg-fin-report</span></span></div>
+
+                <div class="db-row grid-2-col"><span class="text-faded">AISHWARYA.GOVINDASAMY</span><span class="text-right"><span class="cat-tag cat-cost">Data Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">karen.miglietta</span><span class="text-right"><span class="cat-tag cat-cost">Data Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Ronald.F.Cronin</span><span class="text-right"><span class="cat-tag cat-cost">Data Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Amit.Chib</span><span class="text-right"><span class="cat-tag cat-cost">Data Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Nikhil.PaiBombthadak</span><span class="text-right"><span class="cat-tag cat-cost">Data Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Kaushal.Dontula</span><span class="text-right"><span class="cat-tag cat-cost">Data Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">SaiSandeep Devabhaktuni</span><span class="text-right"><span class="cat-tag cat-cost">Data Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Nithya Tejasvini.Baddam</span><span class="text-right"><span class="cat-tag cat-cost">Data Owner</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Nagaraju.Cemitathollu</span><span class="text-right"><span class="cat-tag cat-cost">Data Owner</span></span></div>
+
+                <div class="db-row grid-2-col"><span class="text-faded">Nileema.Shah</span><span class="text-right"><span class="cat-tag cat-supp">cfg-dba-support</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">SaiNikhilesh.Thogaramudi</span><span class="text-right"><span class="cat-tag cat-supp">cfg-dba-support</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Aditya.Punna</span><span class="text-right"><span class="cat-tag cat-supp">cfg-dba-support</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Neville George.Jacob</span><span class="text-right"><span class="cat-tag cat-supp">cfg-dba-support</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">UdayKiran.Guguloth</span><span class="text-right"><span class="cat-tag cat-supp">cfg-dba-support</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Swathi.Ganji</span><span class="text-right"><span class="cat-tag cat-supp">cfg-dba-support</span></span></div>
+
+                <div class="db-row grid-2-col"><span class="text-faded">Kausalyadevi.Jegadeeswaran</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Pallai.Satyanarayana Rao</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Aravind.Gopal</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Shanmuga.A</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Prashanth.CR</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">SIVA.M</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">ASWATHY.KV</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Arunkumar.X.Rajendran</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Dharani.T</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Manikandan.Palanisamy</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">VARSHA.SAMINATHAN</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Praveen.Munagapati</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">UnnamVamsi.Krishna</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Naresh.ChandraChidri</span><span class="text-right"><span class="cat-tag cat-db">Cfg-Administrator</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">anibal.tavares</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">shankar.g.veluchamy</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Prabhakaran.P</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Yilma.Jima</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Somnath.Kale</span><span class="text-right"><span class="cat-tag cat-db">Cfg-Administrator</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">MangaliGuna.Sekhar</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Sriharsha Reddy.Beeravelli</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Janaki.Mohan</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">ARUN.PRASAD</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">subramani.mohanrangthale</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">saravanaprasaath.r</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Santhosh.Kamuni</span><span class="text-right"><span class="cat-tag cat-db">Cfg-Administrator</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Poojitha.R</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Jintu.Vijayan</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">SOUNDARAPANDY.B</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">PRADEEPKUMARREDDY</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Chetan.Kosti</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Bavithra.R</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">deepak.chavan</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Vignesh.Selvaganapathy</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Swathinithila.B</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Praveen Kumar.Murugaperumal</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">prab.athilat</span><span class="text-right"><span class="cat-tag cat-db">Cfg-Administrator</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">CaveEkabe.Aku</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Vijaysinh.M.Salpe</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">srinivas.neelam</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">manojkumar.pendekanti</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">nagasatyadharmendra</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">sonamvitthal.mule</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">akshay.rane</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">suriyaprakash.ts</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Suman.Kalvakuntla</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Jawahar Vendrathi</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Vasanthi.Kondepati</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Jampana.Mahesh</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">T.Dharanidharan</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+                <div class="db-row grid-2-col"><span class="text-faded">Lavanya. Gurram</span><span class="text-right"><span class="cat-tag cat-db">cfg-dba-admin</span></span></div>
+            </div>
+        </div>
+    </div>
+    <div class="card card-wide">
+    <h3>Detailed Replication Data</h3>
+    <div class="list-container" style="overflow-x: auto;">
+        <table id="replication-table" class="alert-table" style="min-width: 2200px; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f1f3f5; text-align: left;">
+                    <th>SoftwareImage</th>
+                    <th>SoftwareImageVersion</th>
+                    <th>MultiDisk</th>
+                    <th>Topology</th>
+                    <th>ComputeSharingEnabled</th>
+                    <th>ParameterProfileId</th>
+                    <th>ComputeType</th>
+                    <th>OptionsProfileId</th>
+                    <th>Status</th>
+                    <th>Region</th>
+                    <th>Storage</th>
+                    <th>EnableEncryption</th>
+                    <th>EnableSSL</th>
+                    <th>ScriptId</th>
+                    <th>ScriptId.1</th>
+                    <th class="text-right">Count</th>
+                </tr>
+                <tr style="background: #fafafa;">
+                    <th><select class="column-dropdown" data-col="0" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;"><option value="">All</option><option value="MySQL 8.0">MySQL 8.0</option><option value="PostgreSQL 13">PostgreSQL 13</option><option value="PostgreSQL 14">PostgreSQL 14</option><option value="PostgreSQL 15">PostgreSQL 15</option><option value="PostgreSQL 16">PostgreSQL 16</option><option value="PostgreSQL 17">PostgreSQL 17</option></select></th>
+                    <th><select class="column-dropdown" data-col="1" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;"><option value="">All</option><option value="MySQL 8.0.36">MySQL 8.0.36</option><option value="MySQL 8.0.40">MySQL 8.0.40</option><option value="PostgreSQL 13.13">PostgreSQL 13.13</option><option value="PostgreSQL 13.9">PostgreSQL 13.9</option><option value="PostgreSQL 14.6">PostgreSQL 14.6</option><option value="PostgreSQL 14.8">PostgreSQL 14.8</option><option value="PostgreSQL 14.9">PostgreSQL 14.9</option><option value="PostgreSQL 15.4">PostgreSQL 15.4</option><option value="PostgreSQL 15.8">PostgreSQL 15.8</option><option value="PostgreSQL 16.1">PostgreSQL 16.1</option><option value="PostgreSQL 16.4">PostgreSQL 16.4</option><option value="PostgreSQL 16.8">PostgreSQL 16.8</option><option value="PostgreSQL 17.1 (RHEL)">PostgreSQL 17.1 (RHEL)</option></select></th>
+                    <th><select class="column-dropdown" data-col="2" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;"><option value="">All</option><option value="False">False</option></select></th>
+                    <th><select class="column-dropdown" data-col="3" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;"><option value="">All</option><option value="HIGH_AVAILABILITY">HIGH_AVAILABILITY</option><option value="SINGLE_INSTANCE">SINGLE_INSTANCE</option></select></th>
+                    <th><select class="column-dropdown" data-col="4" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;"><option value="">All</option><option value="False">False</option></select></th>
+                    <th><select class="column-dropdown" data-col="5" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;"><option value="">All</option><option value="04933d24-8be3-453c-853d-65b1ffa9da01">04933...</option><option value="d7036f23-dde5-4747-863a-4fec1b731136">d7036...</option></select></th>
+                    <th><select class="column-dropdown" data-col="6" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;"><option value="">All</option><option value="tesl_16_a">tesl_16_a</option><option value="tesl_2_a">tesl_2_a</option><option value="tesl_8_b">tesl_8_b</option><option value="tesl_m5a_8">tesl_m5a_8</option></select></th>
+                    <th><select class="column-dropdown" data-col="7" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;"><option value="">All</option><option value="1162ea7b-69fe-443a-93d1-2b75a24e5230">1162e...</option><option value="6eb89639-4587-427c-bbed-9e15d9a0beb1">6eb89...</option></select></th>
+                    <th><select class="column-dropdown" data-col="8" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;"><option value="">All</option><option value="successful">successful</option></select></th>
+                    <th><select class="column-dropdown" data-col="9" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;"><option value="">All</option><option value="us-east-1">us-east-1</option><option value="us-east-2">us-east-2</option></select></th>
+                    <th><select class="column-dropdown" data-col="10" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;"><option value="">All</option><option value="107374182400">107374182400</option><option value="161061273600">161061273600</option></select></th>
+                    <th><select class="column-dropdown" data-col="11" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;"><option value="">All</option><option value="True">True</option></select></th>
+                    <th><select class="column-dropdown" data-col="12" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;"><option value="">All</option><option value="False">False</option><option value="True">True</option></select></th>
+                    <th><select class="column-dropdown" data-col="13" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;"><option value="">All</option></select></th>
+                    <th><select class="column-dropdown" data-col="14" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;"><option value="">All</option></select></th>
+                    <th><select class="column-dropdown" data-col="15" style="width:100%; padding:4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px;"><option value="">All</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="9">9</option></select></th>
+                </tr>
+            </thead>
+            <tbody class="scroll-area">
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>d7036f23-dde5-4747-863a-4fec1b731136</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>9</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.36</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>a941bbdd-55eb-4f7a-8efd-24128dfacd34</td><td>tesl_2_b</td><td class='text-mono'></td><td></td><td>us-east-1</td><td>161061273600</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>4</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>a20ae9f1-aa7a-4475-a632-fa91187e23f3</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>3</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>d7036f23-dde5-4747-863a-4fec1b731136</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>3</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>d18b5ae4-2d01-4a5d-8d16-a6e30c7bdb6d</td><td>tesl_8_b</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>805306368000</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>3</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_2_a</td><td class='text-mono'>6eb89639-4587-427c-bbed-9e15d9a0beb1</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>3</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.36</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>fbca6b00-c427-41d9-ae6c-f99824c8b1f4</td><td>tesl_2_c</td><td class='text-mono'></td><td></td><td>us-east-1</td><td>536870912000</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>2</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.9</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>651ae3c3-2080-48bc-b90f-21749a750323</td><td>tesl_2_a</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>2</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.9</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>229cd9e2-436b-4672-af89-4284468b3a45</td><td>tesl_2_a</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>53687091220</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>2</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.9</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>26aa431f-dbb7-4f8e-8dfb-14d6cf83e44f</td><td>tesl_2_a</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>75161927680</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>2</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.8</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>b51921b9-337d-414e-93c7-94533923ccf0</td><td>tesl_2_b</td><td class='text-mono'>6eb89639-4587-427c-bbed-9e15d9a0beb1</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>2</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.36</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>15e4629b-006c-40a7-832d-07f152df39f5</td><td>tesl_2_b</td><td class='text-mono'></td><td></td><td>us-east-1</td><td>161061273600</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.36</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>8c6e753e-1c59-4172-90da-e9fc2173ac41</td><td>tesl_32_a</td><td class='text-mono'></td><td></td><td>us-east-1</td><td>3298534883328</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.36</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>fbca6b00-c427-41d9-ae6c-f99824c8b1f4</td><td>tesl_16_a</td><td class='text-mono'></td><td></td><td>us-east-1</td><td>1073741824000</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.36</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>fbca6b00-c427-41d9-ae6c-f99824c8b1f4</td><td>tesl_8_b</td><td class='text-mono'></td><td></td><td>us-east-1</td><td>3221225472000</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.36</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>1482dbc2-0897-402a-bb0a-f878b241878a</td><td>tesl_4_b</td><td class='text-mono'></td><td></td><td>us-east-1</td><td>161061273600</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.36</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>196db8a9-7a1c-43ff-bdd1-84ddb5e4cabb</td><td>tesl_2_b</td><td class='text-mono'></td><td></td><td>us-east-1</td><td>161061273600</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.36</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>23a545c0-961c-42fb-b9f7-5d333d4d57d6</td><td>tesl_8_b</td><td class='text-mono'></td><td></td><td>us-east-1</td><td>805306368000</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.36</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>2cbabff0-5ede-4cb5-8d63-d2f6e1e4d5a5</td><td>tesl_2_b</td><td class='text-mono'></td><td></td><td>us-east-1</td><td>161061273600</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.36</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>a941bbdd-55eb-4f7a-8efd-24128dfacd34</td><td>tesl_2_b</td><td class='text-mono'></td><td></td><td>us-east-1</td><td>429496729600</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.36</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>a941bbdd-55eb-4f7a-8efd-24128dfacd34</td><td>tesl_2_c</td><td class='text-mono'></td><td></td><td>us-east-1</td><td>161061273600</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.40</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>15e4629b-006c-40a7-832d-07f152df39f5</td><td>tesl_8_b</td><td class='text-mono'></td><td><span class='badge-pill badge-success'>successful</span></td><td>us-east-1</td><td>161061273600</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.40</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>fbca6b00-c427-41d9-ae6c-f99824c8b1f4</td><td>tesl_2_c</td><td class='text-mono'></td><td></td><td>us-east-1</td><td>536870912000</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.40</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>2cbabff0-5ede-4cb5-8d63-d2f6e1e4d5a5</td><td>tesl_2_a</td><td class='text-mono'></td><td></td><td>us-east-1</td><td>161061273600</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.40</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>2cbabff0-5ede-4cb5-8d63-d2f6e1e4d5a5</td><td>tesl_2_a</td><td class='text-mono'>40940d63-d2d7-421e-96b6-8a338a267f61</td><td></td><td>us-east-1</td><td>53687091200</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.40</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>2cbabff0-5ede-4cb5-8d63-d2f6e1e4d5a5</td><td>tesl_2_b</td><td class='text-mono'></td><td></td><td>us-east-1</td><td>161061273600</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>MySQL 8.0</td><td>MySQL 8.0.40</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>d904eed8-56f6-4ff1-bd8d-d2c58534e2cf</td><td>tesl_2_b</td><td class='text-mono'></td><td></td><td>us-east-1</td><td>161061273600</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 13</td><td>PostgreSQL 13.13</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>04933d24-8be3-453c-853d-65b1ffa9da01</td><td>tesl_2_a</td><td class='text-mono'>55b74932-97f2-4723-a2b9-a3627629aa81</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-crit'>False</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 13</td><td>PostgreSQL 13.9</td><td><span class='badge-pill '></span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>62ac68a3-3a55-4dc4-a2a8-13249f7fc567</td><td>tesl_2_a</td><td class='text-mono'>55b74932-97f2-4723-a2b9-a3627629aa81</td><td></td><td>us-east-1</td><td>53687091250</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 13</td><td>PostgreSQL 13.9</td><td><span class='badge-pill '></span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>99cd9019-e251-4999-b869-645830109299</td><td>tesl_2_a</td><td class='text-mono'>55b74932-97f2-4723-a2b9-a3627629aa81</td><td></td><td>us-east-1</td><td>53687091220</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 13</td><td>PostgreSQL 13.9</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>04933d24-8be3-453c-853d-65b1ffa9da01</td><td>tesl_8_a</td><td class='text-mono'>55b74932-97f2-4723-a2b9-a3627629aa81</td><td></td><td>us-east-1</td><td>3006477107200</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 13</td><td>PostgreSQL 13.9</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>94e97db2-e76c-4fa5-a368-b9d6597d7a97</td><td>tesl_8_a</td><td class='text-mono'>55b74932-97f2-4723-a2b9-a3627629aa81</td><td></td><td>us-east-1</td><td>3006477107200</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-crit'>False</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.6</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>229cd9e2-436b-4672-af89-4284468b3a45</td><td>tesl_2_a</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>134217728000</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.8</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>cf3168a5-0fe2-48aa-b104-bcc3b38f10d2</td><td>tesl_8_a</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.8</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>26aa431f-dbb7-4f8e-8dfb-14d6cf83e44f</td><td>tesl_2_b</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>75161927680</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.8</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>cf3168a5-0fe2-48aa-b104-bcc3b38f10d2</td><td>tesl_8_a</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-2</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-crit'>False</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.9</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>3363010f-6442-43bc-8145-72415f07fac8</td><td>tesl_8_b</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>322122547200</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.9</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>82fca06a-6666-47b8-aceb-f6d1b84cdf90</td><td>tesl_2_a</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>75161927680</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.9</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>b4a6d87c-a5a0-4f61-a830-17c2d88dbe2b</td><td>tesl_2_b</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>75161927680</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.9</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>cf3168a5-0fe2-48aa-b104-bcc3b38f10d2</td><td>tesl_2_b</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.9</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>26aa431f-dbb7-4f8e-8dfb-14d6cf83e44f</td><td>tesl_2_b</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-2</td><td>75161927680</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-crit'>False</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.9</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>27d7e0a5-d473-4f8f-9a70-8041c2d0f55e</td><td>tesl_2_a</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.9</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>47741e6e-ec28-4438-8c1d-1e523f39db0b</td><td>tesl_2_a</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>75161927680</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.9</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>553cedb0-63f1-4830-b4f7-e2c565860361</td><td>tesl_2_a</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>75161927680</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.9</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>cf3168a5-0fe2-48aa-b104-bcc3b38f10d2</td><td>tesl_2_a</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.9</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>cf3168a5-0fe2-48aa-b104-bcc3b38f10d2</td><td>tesl_2_b</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 14</td><td>PostgreSQL 14.9</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>cf3168a5-0fe2-48aa-b104-bcc3b38f10d2</td><td>tesl_8_a</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>d18b5ae4-2d01-4a5d-8d16-a6e30c7bdb6d</td><td>tesl_8_b</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>805306368000</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>d7036f23-dde5-4747-863a-4fec1b731136</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-2</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-crit'>False</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>d7036f23-dde5-4747-863a-4fec1b731136</td><td>tesl_2_b</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>d7036f23-dde5-4747-863a-4fec1b731136</td><td>tesl_4_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>1edc53a2-b518-4683-b99b-4475477843d1</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>2040ab67-146e-4bb6-9817-2e16d4128503</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>4d3cc2db-1d4e-4085-8f64-d621b1840e6b</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>161061273600</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>4d3cc2db-1d4e-4085-8f64-d621b1840e6b</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>214748364800</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>563e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>563e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_4_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>5b587294-3272-4769-afdb-9908866e746e</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>5b587294-3272-4769-afdb-9908866e746e</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>161061273600</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>5b587294-3272-4769-afdb-9908866e746e</td><td>tesl_2_a</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>161061273600</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>70b69b09-cbb0-4996-98ec-69e160359781</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>70b69b09-cbb0-4996-98ec-69e160359781</td><td>tesl_2_a</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td><span class='badge-pill badge-success'>successful</span></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_2_a</td><td class='text-mono'>6eb89639-4587-427c-bbed-9e15d9a0beb1</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_2_b</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_4_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_4_b</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_8_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>8b44b499-f7f7-49f9-bb1b-05d5225be54b</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>8b44b499-f7f7-49f9-bb1b-05d5225be54b</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td><span class='badge-pill badge-success'>successful</span></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>8b44b499-f7f7-49f9-bb1b-05d5225be54b</td><td>tesl_2_a</td><td class='text-mono'>6eb89639-4587-427c-bbed-9e15d9a0beb1</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>bcc3c01b-efce-431d-8457-3a05ecf91a9a</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>c0d1a96a-a68d-4716-a18d-691657b98d36</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>d18b5ae4-2d01-4a5d-8d16-a6e30c7bdb6d</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>d18b5ae4-2d01-4a5d-8d16-a6e30c7bdb6d</td><td>tesl_8_b</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td><span class='badge-pill badge-success'>successful</span></td><td>us-east-1</td><td>805306368000</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>d7036f23-dde5-4747-863a-4fec1b731136</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td><span class='badge-pill badge-success'>successful</span></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.8</td><td><span class='badge-pill badge-crit'>False</span></td><td>HIGH_AVAILABILITY</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>8b44b499-f7f7-49f9-bb1b-05d5225be54b</td><td>tesl_2_a</td><td class='text-mono'>6eb89639-4587-427c-bbed-9e15d9a0beb1</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.8</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>8b44b499-f7f7-49f9-bb1b-05d5225be54b</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 15</td><td>PostgreSQL 15.8</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>8b44b499-f7f7-49f9-bb1b-05d5225be54b</td><td>tesl_2_a</td><td class='text-mono'>6eb89639-4587-427c-bbed-9e15d9a0beb1</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.1</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.1</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_2_a</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.1</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_2_a</td><td class='text-mono'>6eb89639-4587-427c-bbed-9e15d9a0beb1</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.1</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_2_b</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.1</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_2_b</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.1</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_2_b</td><td class='text-mono'>6eb89639-4587-427c-bbed-9e15d9a0beb1</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.1</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_2_c</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.1</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_2_c</td><td class='text-mono'>22819a55-d58c-4de0-9881-62540dab371d</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.1</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_2_c</td><td class='text-mono'>6eb89639-4587-427c-bbed-9e15d9a0beb1</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.1</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_8_b</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>77ec0b3f-544c-4586-bde8-4f40aac3bd28</td><td>tesl_c5a_4</td><td class='text-mono'>6eb89639-4587-427c-bbed-9e15d9a0beb1</td><td></td><td>us-east-1</td><td>53687091200</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-crit'>False</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_2_a</td><td class='text-mono'>1a86208e-1e7d-4e26-ae58-5a174e288309</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_4_b</td><td class='text-mono'>6eb89639-4587-427c-bbed-9e15d9a0beb1</td><td></td><td>us-east-1</td><td>268435456000</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_8_b</td><td class='text-mono'>6eb89639-4587-427c-bbed-9e15d9a0beb1</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>892e7c15-c540-4da5-b01d-8f207cb89025</td><td>tesl_8_b</td><td class='text-mono'>6eb89639-4587-427c-bbed-9e15d9a0beb1</td><td><span class='badge-pill badge-success'>successful</span></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 16</td><td>PostgreSQL 16.4</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>ffaa8aac-d215-46ed-a887-82637f90998a</td><td>tesl_2_a</td><td class='text-mono'>6eb89639-4587-427c-bbed-9e15d9a0beb1</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+                <tr><td>PostgreSQL 17</td><td>PostgreSQL 17.1 (RHEL)</td><td><span class='badge-pill badge-crit'>False</span></td><td>SINGLE_INSTANCE</td><td><span class='badge-pill badge-crit'>False</span></td><td class='text-mono'>24fd51c8-5d9b-4597-b24d-e9999742a77b</td><td>tesl_2_a</td><td class='text-mono'>1162ea7b-69fe-443a-93d1-2b75a24e5230</td><td></td><td>us-east-1</td><td>107374182400</td><td><span class='badge-pill badge-success'>True</span></td><td><span class='badge-pill badge-success'>True</span></td><td></td><td></td><td class='font-bold text-right'>1</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// 1. Column Sorting Logic
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.getElementById('replication-table');
+    const headers = table.querySelectorAll('thead tr:first-child th');
+    const tbody = table.querySelector('tbody');
+    
+    // Store sort direction for each column (1 = Ascending, -1 = Descending)
+    let sortDirections = Array.from(headers).map(() => 1);
+
+    headers.forEach((header, index) => {
+        header.addEventListener('click', () => {
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const direction = sortDirections[index];
+
+            // Check data type based on the first non-empty cell in the column
+            const sampleCell = rows.find(r => r.cells[index].textContent.trim() !== '')?.cells[index].textContent.trim();
+            const isNumeric = sampleCell && !isNaN(parseFloat(sampleCell.replace(/,/g, ''))) && isFinite(sampleCell.replace(/,/g, ''));
+
+            // Sort the rows
+            rows.sort((rowA, rowB) => {
+                const cellA = rowA.cells[index].textContent.trim();
+                const cellB = rowB.cells[index].textContent.trim();
+
+                if (isNumeric) {
+                    // Handle numbers (stripping commas if present)
+                    const a = parseFloat(cellA.replace(/,/g, '') || 0);
+                    const b = parseFloat(cellB.replace(/,/g, '') || 0);
+                    return (a - b) * direction;
+                } else {
+                    // Handle strings (case-insensitive)
+                    return cellA.localeCompare(cellB, undefined, { numeric: true, sensitivity: 'base' }) * direction;
+                }
+            });
+
+            // Re-append sorted rows to the table body
+            rows.forEach(row => tbody.appendChild(row));
+
+            // Toggle sort direction for the next click
+            sortDirections[index] = -direction;
+        });
+    });
+});
+
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('column-dropdown')) {
+        const table = document.getElementById('replication-table');
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        const dropdowns = Array.from(document.querySelectorAll('.column-dropdown'));
+
+        for (let i = 0; i < rows.length; i++) {
+            let matches = true;
+            for (let d = 0; d < dropdowns.length; d++) {
+                const colIndex = dropdowns[d].getAttribute('data-col');
+                const filterValue = dropdowns[d].value;
+                const cellValue = rows[i].cells[colIndex].textContent.trim();
+                
+                if (filterValue !== "" && cellValue !== filterValue) {
+                    matches = false;
+                    break;
+                }
+            }
+            rows[i].style.display = matches ? "" : "none";
+        }
+    }
+});
+</script>
+    
+</div>
+
+</body>
+</html>
